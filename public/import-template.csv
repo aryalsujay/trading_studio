@@ -1,0 +1,5 @@
+Trade #,Symbol,Entry Date,Entry Price,Quantity,Exit Price,Exit Date,Notes,Member,Div DS,Div SA,Div SG
+1,RELIANCE,2025-01-01,2500,10,2600,2025-01-10,Sample Trade,DS,36,35,30
+2,INFY,2025-01-02,1500,20,,,Split Trade,DS,SA,36,35,30
+3,HDFCBANK,2025-01-03,1600,100,,,Auto Split,ALL,36,35,30
+4,TCS,2025-01-04,3800,5,,,Default Personal,,36,35,30

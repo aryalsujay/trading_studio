@@ -1,0 +1,4 @@
+trade_number,symbol,entry_date,entry_price,quantity,exit_date,exit_price,notes
+1,NIFTYBEES,2026-01-15,250,10,2026-01-20,260,Sample profitable trade
+,BANKBEES,2026-01-18,450,5,,,LIVE trade - auto-numbered from last entry
+3,GOLDBEES,2026-01-20,60,20,2026-01-25,58,Sample loss trade
