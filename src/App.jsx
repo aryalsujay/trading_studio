@@ -3,14 +3,14 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import Dashboard from './components/Dashboard';
 import TradesPage from './components/TradesPage';
 import CapitalPage from './components/CapitalPage';
+import AnalyticsPage from './components/AnalyticsPage';
 import SettingsPage from './components/SettingsPage';
-
 import { useMembers } from './contexts/MemberContext';
+import { SymbolProvider } from './contexts/SymbolContext';
+import { MemberProvider } from './contexts/MemberContext'; // Imported correctly
 
 function Navigation() {
     const location = useLocation();
-    const { members, selectedMember, setSelectedMember } = useMembers();
-
     const isActive = (path) => location.pathname === path;
 
     return (
@@ -19,8 +19,6 @@ function Navigation() {
                 <Link to="/" className="nav-brand">
                     <span>📊</span> ETF Trading Ledger
                 </Link>
-
-
 
                 <ul className="nav-links" style={{ marginLeft: 'auto' }}>
                     <li>
@@ -39,6 +37,11 @@ function Navigation() {
                         </Link>
                     </li>
                     <li>
+                        <Link to="/analytics" className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}>
+                            Analytics
+                        </Link>
+                    </li>
+                    <li>
                         <Link to="/settings" className={`nav-link ${isActive('/settings') ? 'active' : ''}`}>
                             Settings
                         </Link>
@@ -48,9 +51,9 @@ function Navigation() {
                             href="https://zerodha.com/brokerage-calculator/#tab-equities"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="nav-link"
+                            className="nav-link external-link"
                         >
-                            Zerodha Calculator ↗
+                            Zerodha Calc ↗
                         </a>
                     </li>
                 </ul>
@@ -58,9 +61,6 @@ function Navigation() {
         </nav>
     );
 }
-
-import { SymbolProvider } from './contexts/SymbolContext';
-import { MemberProvider } from './contexts/MemberContext';
 
 function App() {
     return (
@@ -73,6 +73,7 @@ function App() {
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/trades" element={<TradesPage />} />
                             <Route path="/capital" element={<CapitalPage />} />
+                            <Route path="/analytics" element={<AnalyticsPage />} />
                             <Route path="/settings" element={<SettingsPage />} />
                         </Routes>
                     </ErrorBoundary>
@@ -116,4 +117,3 @@ class ErrorBoundary extends Component {
 }
 
 export default App;
-

@@ -1129,7 +1129,120 @@ app.get('/api/dashboard-stats', (req, res) => {
 
 
 
+
+// ===== ANALYTICS ROUTES =====
+
+// Get monthly performance stats
+app.get('/api/analytics/monthly-performance', (req, res) => {
+  try {
+    const { member_id } = req.query;
+
+    let query = `
+      SELECT 
+        strftime('%Y-%m', sell_date) as month,
+        COUNT(*) as total_trades,
+        SUM(CASE WHEN net_profit > 0 THEN 1 ELSE 0 END) as winning_trades,
+        SUM(CASE WHEN net_profit < 0 THEN 1 ELSE 0 END) as losing_trades,
+        SUM(brokerage) as total_brokerage,
+        SUM(net_profit) as net_profit,
+        SUM((sell_price - buy_price) * quantity) as gross_profit
+      FROM trades 
+      WHERE sell_price IS NOT NULL
+    `;
+
+    const params = [];
+    if (member_id) {
+      query += ' AND member_id = ?';
+      params.push(member_id);
+    }
+
+    query += ' GROUP BY month ORDER BY month DESC';
+
+    const monthlyStats = db.prepare(query).all(...params);
+    res.json(monthlyStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get capital growth over time
+app.get('/api/analytics/capital-growth', (req, res) => {
+  try {
+    const { member_id } = req.query;
+
+    // 1. Get all capital transactions
+    let capQuery = `
+      SELECT transaction_date as date, amount, transaction_type 
+      FROM capital_transactions 
+      WHERE 1=1
+    `;
+    const capParams = [];
+    if (member_id) {
+      capQuery += ' AND member_id = ?';
+      capParams.push(member_id);
+    }
+    capQuery += ' ORDER BY transaction_date ASC';
+    const capitalTxns = db.prepare(capQuery).all(...capParams);
+
+    // 2. Get all realized P&L from trades
+    let tradeQuery = `
+      SELECT sell_date as date, net_profit 
+      FROM trades 
+      WHERE sell_price IS NOT NULL
+    `;
+    const tradeParams = [];
+    if (member_id) {
+      tradeQuery += ' AND member_id = ?';
+      tradeParams.push(member_id);
+    }
+    tradeQuery += ' ORDER BY sell_date ASC';
+    const tradeTxns = db.prepare(tradeQuery).all(...tradeParams);
+
+    // Combine and sort all events
+    const events = [
+      ...capitalTxns.map(t => ({
+        date: t.date,
+        amount: t.transaction_type === 'DEPOSIT' ? t.amount : -t.amount,
+        type: 'CAPITAL'
+      })),
+      ...tradeTxns.map(t => ({
+        date: t.date,
+        amount: t.net_profit,
+        type: 'PROFIT'
+      }))
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const timeSeries = [];
+    let currentCapital = 0;
+    let netDeposits = 0;
+
+    events.forEach(event => {
+      if (event.type === 'CAPITAL') {
+        netDeposits += event.amount;
+      }
+      currentCapital += event.amount;
+
+      // Update or add entry for this date
+      if (timeSeries.length > 0 && timeSeries[timeSeries.length - 1].date === event.date) {
+        timeSeries[timeSeries.length - 1].value = currentCapital;
+        timeSeries[timeSeries.length - 1].netDeposits = netDeposits;
+      } else {
+        timeSeries.push({
+          date: event.date,
+          value: currentCapital,
+          netDeposits: netDeposits
+        });
+      }
+    });
+
+    res.json(timeSeries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ===== DATABASE MANAGEMENT ROUTES =====
+
 
 // Export Database (Download)
 app.get('/api/database/export', (req, res) => {
