@@ -5,8 +5,13 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
+import cron from 'node-cron';
 import { getDatabase, closeDatabase, initDatabase } from './database.js';
 import { calculateBrokerage, calculateNetProfit } from './utils/brokerageCalculator.js';
+
+// Import new services
+import { updateEtfData } from './services/etfService.js';
+import { updateFiiDiiData } from './services/fiiDiiService.js';
 
 const app = express();
 const PORT = 3000;
@@ -21,13 +26,114 @@ app.use(express.json());
 // Initialize database
 let db = getDatabase();
 
-// ===== MEMBER ROUTES =====
+// ===== CRON JOBS =====
+// Update ETF Data every 5 minutes during market hours (09:15 to 15:30 IST)
+cron.schedule('*/5 9-15 * * 1-5', async () => {
+  try {
+    await updateEtfData();
+  } catch (e) {
+    console.error("Cron: Failed ETF Update", e);
+  }
+}, { timezone: "Asia/Kolkata" });
+
+// Update FII/DII Data at end of day (18:00 IST)
+cron.schedule('0 18 * * 1-5', async () => {
+  try {
+    await updateFiiDiiData();
+  } catch (e) {
+    console.error("Cron: Failed FII DII Update", e);
+  }
+}, { timezone: "Asia/Kolkata" });
+
+// Kick off initial fetch on startup
+setTimeout(async () => {
+  console.log("Starting initial data fetches...");
+  await updateEtfData();
+  await updateFiiDiiData();
+}, 2000);
+
+
 
 // Get all members
 app.get('/api/members', (req, res) => {
   try {
     const members = db.prepare("SELECT * FROM members WHERE is_active = 1 ORDER BY id").all();
     res.json(members);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== MARKETS MODULE ROUTES (ETF / FII DII) =====
+
+// Get all ETFs
+app.get('/api/etfs', (req, res) => {
+  try {
+    const etfs = db.prepare("SELECT * FROM etf_data ORDER BY symbol").all();
+    res.json(etfs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Force refresh ETFs
+app.post('/api/etfs/refresh', async (req, res) => {
+  try {
+    const result = await updateEtfData();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get FII/DII Data
+app.get('/api/fii-dii', (req, res) => {
+  try {
+    const data = db.prepare("SELECT * FROM fii_dii_data ORDER BY date DESC, category ASC limit 60").all();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Force refresh FII DII
+app.post('/api/fii-dii/refresh', async (req, res) => {
+  try {
+    const result = await updateFiiDiiData();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get App Setting (Targeted for ETF Provider)
+app.get('/api/settings/:key', (req, res) => {
+  try {
+    const { key } = req.params;
+    const setting = db.prepare("SELECT setting_value FROM app_settings WHERE setting_key = ?").get(key);
+    res.json({ key, value: setting ? setting.setting_value : null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update App Setting
+app.post('/api/settings', (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key || !value) return res.status(400).json({ error: "Missing key or value" });
+
+    db.prepare(`
+      INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+      ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value, updated_at=CURRENT_TIMESTAMP
+    `).run(key, value);
+
+    // If we changed ETF provider, kick off an immediate sync
+    if (key === 'etf_data_provider') {
+      updateEtfData();
+    }
+
+    res.json({ success: true, key, value });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

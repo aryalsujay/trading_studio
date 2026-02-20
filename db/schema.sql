@@ -107,3 +107,47 @@ INSERT OR IGNORE INTO instrument_types (type_code, type_name, is_active) VALUES
 -- Insert default member (MVP: single member)
 INSERT OR IGNORE INTO members (member_code, member_name, profit_share_ratio, capital_division, is_active) VALUES
     ('PRIMARY', 'Primary Trader', 1.0, 30, 1);
+
+-- App Settings
+CREATE TABLE IF NOT EXISTS app_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Default setting for data provider
+INSERT OR IGNORE INTO app_settings (setting_key, setting_value) VALUES 
+    ('etf_data_provider', 'google');
+
+-- ETF Data Tracking
+CREATE TABLE IF NOT EXISTS etf_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT UNIQUE NOT NULL,
+    name TEXT,
+    price REAL,
+    change_1d REAL,
+    change_percent_1d REAL,
+    change_1w REAL,
+    change_percent_1w REAL,
+    change_1m REAL,
+    change_percent_1m REAL,
+    volume INTEGER,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_etf_data_symbol ON etf_data(symbol);
+
+-- FII / DII Data Tracking
+CREATE TABLE IF NOT EXISTS fii_dii_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE NOT NULL,
+    category TEXT NOT NULL, -- 'FII' or 'DII'
+    gross_buy REAL,
+    gross_sell REAL,
+    net REAL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date, category)
+);
+
+CREATE INDEX IF NOT EXISTS idx_fii_dii_date ON fii_dii_data(date);

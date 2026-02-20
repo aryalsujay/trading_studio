@@ -601,3 +601,18 @@ h6 { font-size: 1.125rem; }
   font-size: 0.8125rem;
   color: var(--color-text-tertiary);
 }
+
+@keyframes pulseRed {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.live-indicator {
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-danger);
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulseRed 2s infinite;
+  margin-right: 10px;
+}

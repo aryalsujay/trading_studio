@@ -153,3 +153,45 @@ export async function createSymbol(data) {
     if (!response.ok) throw new Error('Failed to create symbol');
     return response.json();
 }
+
+// ===== MARKETS MODULE API =====
+
+export async function fetchEtfData() {
+    const response = await fetch(`${API_BASE}/etfs`);
+    if (!response.ok) throw new Error('Failed to fetch ETFs');
+    return response.json();
+}
+
+export async function refreshEtfData() {
+    const response = await fetch(`${API_BASE}/etfs/refresh`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to refresh ETFs');
+    return response.json();
+}
+
+export async function fetchFiiDiiData() {
+    const response = await fetch(`${API_BASE}/fii-dii`);
+    if (!response.ok) throw new Error('Failed to fetch FII/DII Data');
+    return response.json();
+}
+
+export async function refreshFiiDiiData() {
+    const response = await fetch(`${API_BASE}/fii-dii/refresh`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to refresh FII/DII Data');
+    return response.json();
+}
+
+export async function getAppSetting(key) {
+    const response = await fetch(`${API_BASE}/settings/${key}`);
+    if (!response.ok) throw new Error(`Failed to fetch setting ${key}`);
+    return response.json();
+}
+
+export async function updateAppSetting(key, value) {
+    const response = await fetch(`${API_BASE}/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+    });
+    if (!response.ok) throw new Error(`Failed to update setting ${key}`);
+    return response.json();
+}

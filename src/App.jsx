@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import TradesPage from './components/TradesPage';
 import CapitalPage from './components/CapitalPage';
 import SettingsPage from './components/SettingsPage';
+import MarketsDashboard from './components/MarketsDashboard';
 import { useMembers } from './contexts/MemberContext';
 import { SymbolProvider } from './contexts/SymbolContext';
 import { MemberProvider } from './contexts/MemberContext';
@@ -23,6 +24,11 @@ function Navigation() {
                     <li>
                         <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
                             Dashboard
+                        </Link>
+                    </li>
+                    <li>
+                        <Link to="/markets" className={`nav-link ${isActive('/markets') ? 'active' : ''}`}>
+                            Markets
                         </Link>
                     </li>
                     <li>
@@ -65,6 +71,7 @@ function App() {
                     <ErrorBoundary>
                         <Routes>
                             <Route path="/" element={<Dashboard />} />
+                            <Route path="/markets" element={<MarketsDashboard />} />
                             <Route path="/trades" element={<TradesPage />} />
                             <Route path="/capital" element={<CapitalPage />} />
                             <Route path="/settings" element={<SettingsPage />} />
